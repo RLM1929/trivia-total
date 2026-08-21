@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trivia Total</title>
+<style>
+  @font-face {
+    font-family: 'Marquee';
+    src: local('Arial Black');
+  }
+
+  :root{
+    --bg: #0f0e14;
+    --bg2: #17151f;
+    --gold: #e8b44a;
+    --red: #c7402c;
+    --cream: #f2efe9;
+    --slate: #7a7688;
+    --green: #4a9d6f;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--cream);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    overscroll-behavior: none;
+    height: 100%;
+    width: 100%;
+  }
+
+  body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height: 100dvh;
+  }
+
+  #app{
+    width: 100%;
+    max-width: 480px;
+    min-height: 100dvh;
+    display:flex;
+    flex-direction:column;
+    position: relative;
+    background:
+      repeating-linear-gradient(180deg, transparent, transparent 38px, rgba(232,180,74,0.03) 38px, rgba(232,180,74,0.03) 40px),
+      radial-gradient(ellipse at top, #201d2a 0%, var(--bg) 60%);
+  }
+
+  /* sprocket strip */
+  .sprockets{
+    display:flex;
+    justify-content:space-between;
+    padding: 6px 14px;
+    background: #0a090d;
+  }
+  .sprockets span{
+    width: 10px; height: 10px;
+    background: var(--bg);
+    border-radius: 2px;
+    display:inline-block;
+  }
+
+  header{
+    text-align:center;
+    padding: 18px 20px 10px;
+    border-bottom: 1px solid rgba(232,180,74,0.15);
+  }
+
+  h1{
+    font-family: Impact, 'Arial Narrow', sans-serif;
+    letter-spacing: 3px;
+    font-size: 1.6rem;
+    margin: 0;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-shadow: 0 0 18px rgba(232,180,74,0.35);
+  }
+
+  .subtitle{
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    color: var(--slate);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  #hud{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 14px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: var(--slate);
+  }
+
+  #hud .stat b{ color: var(--cream); font-size: 1rem; }
+
+  #progressWrap{
+    height: 4px;
+    margin: 0 20px 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #progressBar{
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--red), var(--gold));
+    transition: width 0.4s ease;
+  }
+
+  main{
+    flex: 1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding: 10px 20px 30px;
+  }
+
+  #category{
+    text-align:center;
+    color: var(--red);
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-family: Arial, sans-serif;
+  }
+
+  #question{
+    text-align:center;
+    font-size: 1.35rem;
+    line-height: 1.4;
+    margin-bottom: 28px;
+    min-height: 100px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 0 4px;
+  }
+
+  #answers{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
+
+  .answer{
+    font-family: Arial, sans-serif;
+    background: var(--bg2);
+    border: 1px solid rgba(232,180,74,0.25);
+    color: var(--cream);
+    padding: 16px 18px;
+    border-radius: 10px;
+    font-size: 1rem;
+    text-align: left;
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+  }
+  .answer:active{ transform: scale(0.97); }
+
+  .answer .letter{
+    flex-shrink:0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+  }
+
+  .answer.correct{
+    background: rgba(74,157,111,0.18);
+    border-color: var(--green);
+  }
+  .answer.correct .letter{ border-color: var(--green); color: var(--green); }
+
+  .answer.wrong{
+    background: rgba(199,64,44,0.18);
+    border-color: var(--red);
+  }
+  .answer.wrong .letter{ border-color: var(--red); color: var(--red); }
+
+  .answer.disabled{ pointer-events: none; opacity: 0.55; }
+  .answer.disabled.correct, .answer.disabled.wrong{ opacity: 1; }
+
+  #feedback{
+    text-align:center;
+    font-family: Arial, sans-serif;
+    font-size: 0.85rem;
+    min-height: 20px;
+    margin-top: 16px;
+    color: var(--slate);
+  }
+
+  #nextBtn{
+    margin-top: 20px;
+    align-self:center;
+    background: var(--gold);
+    color: #1a1710;
+    border: none;
+    padding: 13px 34px;
+    border-radius: 30px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display:none;
+  }
+  #nextBtn:active{ transform: scale(0.96); }
+
+  /* End screen */
+  #endScreen{
+    display:none;
+    flex:1;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 20px 30px;
+    text-align:center;
+  }
+  .ticket{
+    background: var(--bg2);
+    border: 2px dashed rgba(232,180,74,0.4);
+    border-radius: 14px;
+    padding: 30px 24px;
+    width: 100%;
+  }
+  #finalScore{
+    font-family: Impact, sans-serif;
+    font-size: 3.2rem;
+    color: var(--gold);
+    margin: 6px 0;
+  }
+  #rank{
+    font-family: Arial, sans-serif;
+    color: var(--cream);
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+  #rankDesc{
+    font-family: Arial, sans-serif;
+    color: var(--slate);
+    font-size: 0.85rem;
+    margin-bottom: 22px;
+  }
+  #restartBtn{
+    background: var(--red);
+    color: var(--cream);
+    border: none;
+    padding: 14px 30px;
+    border-radius: 30px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  #restartBtn:active{ transform: scale(0.96); }
+
+  footer{
+    text-align:center;
+    padding: 10px;
+    font-size: 0.65rem;
+    color: #454150;
+    letter-spacing: 1px;
+    font-family: Arial, sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="sprockets">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <header>
+    <h1>Trivia Total</h1>
+    <div class="subtitle">Cultura general, ciencia, historia y más</div>
+  </header>
+
+  <div id="hud">
+    <div class="stat">Pregunta <b id="qIndex">1</b>/<span id="qTotal">10</span></div>
+    <div class="stat">Racha <b id="streak">0</b>🔥</div>
+    <div class="stat">Puntos <b id="score">0</b></div>
+  </div>
+  <div id="progressWrap"><div id="progressBar"></div></div>
+
+  <main id="quizScreen">
+    <div id="category">Categoría</div>
+    <div id="question">Cargando...</div>
+    <div id="answers"></div>
+    <div id="feedback"></div>
+    <button id="nextBtn">Siguiente ▶</button>
+  </main>
+
+  <div id="endScreen">
+    <div class="ticket">
+      <div class="subtitle" style="color:var(--slate)">Resultado final</div>
+      <div id="finalScore">0/10</div>
+      <div id="rank">—</div>
+      <div id="rankDesc">—</div>
+      <button id="restartBtn">Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <div class="sprockets">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <footer>TOCA UNA RESPUESTA PARA JUGAR</footer>
+</div>
+
+<script>
+const QUESTIONS = [
+  { cat: "Clásicos", q: "¿Quién dirigió 'El Padrino'?", options: ["Martin Scorsese","Francis Ford Coppola","Steven Spielberg","Sidney Lumet"], correct: 1 },
+  { cat: "Clásicos", q: "¿Qué actor protagoniza 'Forrest Gump'?", options: ["Tom Hanks","Robin Williams","Kevin Costner","Dustin Hoffman"], correct: 0 },
+  { cat: "Clásicos", q: "¿En qué película aparece la frase 'Aquí no hay dolor'... digo, 'Que la fuerza te acompañe'?", options: ["Star Trek","Star Wars","Dune","Stargate"], correct: 1 },
+  { cat: "Clásicos", q: "¿Quién dirigió 'Tiburón'?", options: ["George Lucas","Steven Spielberg","Ridley Scott","James Cameron"], correct: 1 },
+  { cat: "Clásicos", q: "¿En qué década se estrenó 'Casablanca'?", options: ["1930s","1940s","1950s","1960s"], correct: 1 },
+
+  { cat: "Marvel", q: "¿Cómo se llama el planeta natal de Thor?", options: ["Sakaar","Asgard","Xandar","Ego"], correct: 1 },
+  { cat: "Marvel", q: "¿Quién interpreta a Wolverine en el UCM?", options: ["Chris Hemsworth","Ryan Reynolds","Hugh Jackman","Tom Hardy"], correct: 2 },
+  { cat: "Marvel", q: "¿Cuál es el nombre real de Spider-Man?", options: ["Peter Parker","Miles Morales","Eddie Brock","Harry Osborn"], correct: 0 },
+  { cat: "Marvel", q: "¿Quién es el villano principal de 'Vengadores: Infinity War'?", options: ["Ultron","Loki","Thanos","Killmonger"], correct: 2 },
+  { cat: "Marvel", q: "¿Cómo se llama el reino de Black Panther?", options: ["Sokovia","Wakanda","Genosha","Latveria"], correct: 1 },
+
+  { cat: "Animación", q: "¿Qué estudio produjo 'Coco'?", options: ["DreamWorks","Illumination","Pixar","Blue Sky"], correct: 2 },
+  { cat: "Animación", q: "¿Cómo se llama el pez protagonista de 'Buscando a Nemo'?", options: ["Nemo","Dory","Marlin","Bruce"], correct: 0 },
+  { cat: "Animación", q: "¿Qué estudio japonés hizo 'El viaje de Chihiro'?", options: ["Toei Animation","Studio Ghibli","Madhouse","Sunrise"], correct: 1 },
+
+  { cat: "Series", q: "¿En qué ciudad se ambienta 'Breaking Bad'?", options: ["Phoenix","Albuquerque","El Paso","Santa Fe"], correct: 1 },
+  { cat: "Series", q: "¿Cuántas temporadas tiene 'Stranger Things' hasta su final?", options: ["4","5","6","3"], correct: 1 },
+  { cat: "Series", q: "¿En qué serie aparece la familia Targaryen?", options: ["The Witcher","Vikingos","Juego de Tronos","Shadow and Bone"], correct: 2 },
+
+  { cat: "Oscar", q: "¿Qué película ganó el Oscar a Mejor Película en 2020?", options: ["1917","Joker","Parásitos","Once Upon a Time in Hollywood"], correct: 2 },
+  { cat: "Oscar", q: "¿Qué actriz ganó el Oscar por 'La La Land'... espera, no lo ganó? ¿Quién ganó Mejor Actriz ese año por 'Fences'?", options: ["Emma Stone","Viola Davis","Meryl Streep","Natalie Portman"], correct: 1 },
+  { cat: "Oscar", q: "¿Qué director ganó el Oscar por 'Nomadland'?", options: ["Chloé Zhao","Bong Joon-ho","Damien Chazelle","Greta Gerwig"], correct: 0 },
+
+  { cat: "Terror", q: "¿Quién es el director de 'El Conjuro'?", options: ["James Wan","Jordan Peele","Ari Aster","Mike Flanagan"], correct: 0 },
+  { cat: "Terror", q: "¿Cómo se llama el payaso de 'IT'?", options: ["Freddy","Pennywise","Chucky","Jigsaw"], correct: 1 },
+  { cat: "Terror", q: "¿En qué película aparece la casa 'Hereditary'?", options: ["Hereditary","Midsommar","The Witch","It Follows"], correct: 0 },
+
+  { cat: "K-Dramas", q: "'El Juego del Calamar' es una producción de...", options: ["Corea del Sur","Japón","China","Tailandia"], correct: 0 },
+  { cat: "K-Dramas", q: "¿Qué plataforma estrenó 'El Juego del Calamar'?", options: ["Disney+","Netflix","HBO Max","Prime Video"], correct: 1 },
+  { cat: "K-Dramas", q: "¿Cómo se le llama al género de dramas coreanos?", options: ["J-Drama","K-Drama","C-Drama","T-Drama"], correct: 1 },
+
+  { cat: "Ciencia ficción", q: "¿En qué año se estrenó la primera 'Matrix'?", options: ["1997","1999","2001","2003"], correct: 1 },
+  { cat: "Ciencia ficción", q: "¿Quién dirigió 'Interstellar'?", options: ["Christopher Nolan","Denis Villeneuve","Ridley Scott","James Cameron"], correct: 0 },
+  { cat: "Ciencia ficción", q: "¿En qué planeta se desarrolla gran parte de 'Dune'?", options: ["Arrakis","Caladan","Giedi Prime","Kaitain"], correct: 0 },
+
+  { cat: "Disney", q: "¿Cómo se llama el reino de 'Frozen'?", options: ["Arendelle","Corona","Motunui","DunBroch"], correct: 0 },
+  { cat: "Disney", q: "¿Cómo se llama la isla de 'Moana'?", options: ["Motunui","Kalani","Tefiti","Lalotai"], correct: 0 },
+  { cat: "Disney", q: "¿En qué película Disney aparece el villano Scar?", options: ["Aladdín","El Rey León","Hércules","Mulán"], correct: 1 },
+
+  { cat: "Novelas/Drama", q: "¿Qué elemento es típico del género 'romance con multimillonario'?", options: ["Ciencia ficción dura","Un contraste de clases sociales","Terror sobrenatural","Documental"], correct: 1 },
+  { cat: "Novelas/Drama", q: "¿Qué formato se ha popularizado para consumir dramas cortos en redes?", options: ["Reels/Shorts verticales","Cine IMAX","Radionovelas","Miniseries de 20 temporadas"], correct: 0 },
+
+  { cat: "Videojuegos al cine", q: "¿Qué videojuego inspiró la serie 'The Last of Us'?", options: ["Left 4 Dead","The Last of Us","Days Gone","Resident Evil"], correct: 1 },
+  { cat: "Videojuegos al cine", q: "¿Qué actor interpreta a Mario en la película de 2023?", options: ["Chris Pratt","Jack Black","Charlie Day","Seth Rogen"], correct: 0 },
+
+  { cat: "Anime", q: "¿Qué estudio produce 'Demon Slayer'?", options: ["Ufotable","MAPPA","Bones","Toei Animation"], correct: 0 },
+  { cat: "Anime", q: "¿Cómo se llama el protagonista de 'Naruto'?", options: ["Sasuke Uchiha","Naruto Uzumaki","Kakashi Hatake","Itachi Uchiha"], correct: 1 },
+
+  { cat: "Actores", q: "¿Qué actor interpretó al Joker en 'Joker' (2019)?", options: ["Jared Leto","Heath Ledger","Joaquin Phoenix","Jack Nicholson"], correct: 2 },
+  { cat: "Actores", q: "¿Qué actriz protagoniza 'Wonder Woman'?", options: ["Scarlett Johansson","Gal Gadot","Brie Larson","Charlize Theron"], correct: 1 },
+
+  { cat: "Taquilla", q: "¿Cuál es la película más taquillera de la historia (sin ajustar inflación)?", options: ["Titanic","Avengers: Endgame","Avatar","Star Wars: El despertar de la Fuerza"], correct: 2 },
+
+  { cat: "Geografía", q: "¿Cuál es el río más largo del mundo?", options: ["Nilo","Amazonas","Yangtsé","Misisipi"], correct: 1 },
+  { cat: "Geografía", q: "¿Cuál es el país más grande del mundo por territorio?", options: ["China","Canadá","Rusia","Estados Unidos"], correct: 2 },
+  { cat: "Geografía", q: "¿En qué continente está el desierto del Sahara?", options: ["Asia","África","Oceanía","América"], correct: 1 },
+  { cat: "Geografía", q: "¿Cuál es la capital de Australia?", options: ["Sídney","Melbourne","Canberra","Perth"], correct: 2 },
+
+  { cat: "Historia", q: "¿En qué año cayó el Muro de Berlín?", options: ["1987","1989","1991","1993"], correct: 1 },
+  { cat: "Historia", q: "¿Quién fue el primer emperador de Roma?", options: ["Julio César","Augusto","Nerón","Trajano"], correct: 1 },
+  { cat: "Historia", q: "¿En qué año llegó Cristóbal Colón a América?", options: ["1490","1492","1498","1500"], correct: 1 },
+  { cat: "Historia", q: "¿Qué civilización construyó Machu Picchu?", options: ["Maya","Azteca","Inca","Olmeca"], correct: 2 },
+
+  { cat: "Ciencia", q: "¿Cuál es el planeta más grande del sistema solar?", options: ["Saturno","Neptuno","Júpiter","Urano"], correct: 2 },
+  { cat: "Ciencia", q: "¿Cuál es el elemento químico más abundante en el universo?", options: ["Oxígeno","Hidrógeno","Carbono","Helio"], correct: 1 },
+  { cat: "Ciencia", q: "¿Qué órgano del cuerpo humano bombea la sangre?", options: ["Pulmones","Hígado","Corazón","Riñones"], correct: 2 },
+  { cat: "Ciencia", q: "¿Cuántos huesos tiene el cuerpo humano adulto aproximadamente?", options: ["156","206","256","306"], correct: 1 },
+
+  { cat: "Deportes", q: "¿Cada cuántos años se celebran los Juegos Olímpicos de verano?", options: ["2 años","3 años","4 años","5 años"], correct: 2 },
+  { cat: "Deportes", q: "¿En qué deporte se usa el término 'jaque mate'?", options: ["Damas","Ajedrez","Go","Backgammon"], correct: 1 },
+  { cat: "Deportes", q: "¿Cuántos jugadores de campo tiene un equipo de fútbol (sin contar el portero)?", options: ["9","10","11","12"], correct: 1 },
+
+  { cat: "Música", q: "¿Qué banda británica lanzó el álbum 'Abbey Road'?", options: ["The Rolling Stones","The Beatles","Queen","Pink Floyd"], correct: 1 },
+  { cat: "Música", q: "¿Qué instrumento tiene 88 teclas normalmente?", options: ["Órgano","Piano","Acordeón","Clavicordio"], correct: 1 },
+  { cat: "Música", q: "¿De qué país es originario el reguetón?", options: ["México","Puerto Rico","Colombia","Cuba"], correct: 1 },
+
+  { cat: "Arte", q: "¿Quién pintó 'La Mona Lisa'?", options: ["Miguel Ángel","Rafael","Leonardo da Vinci","Botticelli"], correct: 2 },
+  { cat: "Arte", q: "¿A qué movimiento artístico pertenece Salvador Dalí?", options: ["Cubismo","Surrealismo","Impresionismo","Barroco"], correct: 1 },
+
+  { cat: "Tecnología", q: "¿Qué empresa creó el sistema operativo Android?", options: ["Apple","Microsoft","Google","Samsung"], correct: 2 },
+  { cat: "Tecnología", q: "¿Qué significa 'www' en una dirección web?", options: ["World Wide Web","World Wide Wire","Web Word Wide","Wide World Web"], correct: 0 },
+
+  { cat: "Naturaleza", q: "¿Cuál es el animal terrestre más grande del mundo?", options: ["Rinoceronte","Elefante africano","Jirafa","Hipopótamo"], correct: 1 },
+  { cat: "Naturaleza", q: "¿Cuántos corazones tiene un pulpo?", options: ["1","2","3","4"], correct: 2 },
+
+  { cat: "Literatura", q: "¿Quién escribió 'Cien años de soledad'?", options: ["Mario Vargas Llosa","Gabriel García Márquez","Julio Cortázar","Pablo Neruda"], correct: 1 },
+  { cat: "Literatura", q: "¿Quién escribió 'Don Quijote de la Mancha'?", options: ["Lope de Vega","Miguel de Cervantes","Federico García Lorca","Calderón de la Barca"], correct: 1 }
+];
+
+const TOTAL_QUESTIONS = 12;
+let deck = [];
+let current = 0;
+let score = 0;
+let streak = 0;
+let answered = false;
+
+const qIndexEl = document.getElementById('qIndex');
+const qTotalEl = document.getElementById('qTotal');
+const streakEl = document.getElementById('streak');
+const scoreEl = document.getElementById('score');
+const progressBar = document.getElementById('progressBar');
+const categoryEl = document.getElementById('category');
+const questionEl = document.getElementById('question');
+const answersEl = document.getElementById('answers');
+const feedbackEl = document.getElementById('feedback');
+const nextBtn = document.getElementById('nextBtn');
+const quizScreen = document.getElementById('quizScreen');
+const endScreen = document.getElementById('endScreen');
+const finalScoreEl = document.getElementById('finalScore');
+const rankEl = document.getElementById('rank');
+const rankDescEl = document.getElementById('rankDesc');
+const restartBtn = document.getElementById('restartBtn');
+
+function shuffle(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function startGame(){
+  deck = shuffle(QUESTIONS).slice(0, TOTAL_QUESTIONS);
+  current = 0;
+  score = 0;
+  streak = 0;
+  qTotalEl.textContent = deck.length;
+  endScreen.style.display = 'none';
+  quizScreen.style.display = 'flex';
+  updateHud();
+  loadQuestion();
+}
+
+function updateHud(){
+  qIndexEl.textContent = current + 1;
+  streakEl.textContent = streak;
+  scoreEl.textContent = score;
+  progressBar.style.width = ((current) / deck.length * 100) + '%';
+}
+
+function loadQuestion(){
+  answered = false;
+  feedbackEl.textContent = '';
+  nextBtn.style.display = 'none';
+  updateHud();
+
+  const item = deck[current];
+  categoryEl.textContent = item.cat;
+  questionEl.textContent = item.q;
+  answersEl.innerHTML = '';
+
+  const letters = ['A','B','C','D'];
+  item.options.forEach((opt, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'answer';
+    btn.innerHTML = `<span class="letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.addEventListener('click', () => selectAnswer(i, item.correct, btn));
+    answersEl.appendChild(btn);
+  });
+}
+
+function selectAnswer(chosen, correctIndex, btnEl){
+  if(answered) return;
+  answered = true;
+
+  const allBtns = answersEl.querySelectorAll('.answer');
+  allBtns.forEach(b => b.classList.add('disabled'));
+
+  if(chosen === correctIndex){
+    btnEl.classList.add('correct');
+    score += 10 + streak * 2;
+    streak++;
+    feedbackEl.textContent = '¡Correcto! 🎬';
+    feedbackEl.style.color = 'var(--green)';
+  } else {
+    btnEl.classList.add('wrong');
+    allBtns[correctIndex].classList.add('correct');
+    streak = 0;
+    feedbackEl.textContent = 'Incorrecto';
+    feedbackEl.style.color = 'var(--red)';
+  }
+
+  updateHud();
+  nextBtn.style.display = 'block';
+}
+
+nextBtn.addEventListener('click', () => {
+  current++;
+  if(current >= deck.length){
+    showEnd();
+  } else {
+    loadQuestion();
+  }
+});
+
+function showEnd(){
+  quizScreen.style.display = 'none';
+  endScreen.style.display = 'flex';
+  progressBar.style.width = '100%';
+
+  const maxScore = deck.length * 10;
+  finalScoreEl.textContent = `${score} pts`;
+
+  const pct = score / (maxScore * 1.4); // account for streak bonus loosely
+  let rank, desc;
+  if(pct >= 0.85){ rank = '🏆 Cinéfilo experto'; desc = 'Conoces el cine mejor que muchos críticos.'; }
+  else if(pct >= 0.6){ rank = '🎬 Amante del cine'; desc = 'Buen ojo, pero aún hay clásicos por descubrir.'; }
+  else if(pct >= 0.35){ rank = '🍿 Espectador casual'; desc = 'Vas por buen camino, sigue viendo películas.'; }
+  else { rank = '📼 Novato de la sala'; desc = '¡Es hora de una maratón de cine!'; }
+
+  rankEl.textContent = rank;
+  rankDescEl.textContent = desc;
+}
+
+restartBtn.addEventListener('click', startGame);
+
+startGame();
+</script>
+
+</body>
+</html>
